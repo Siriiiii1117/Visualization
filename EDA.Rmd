@@ -137,3 +137,96 @@ weather_df |>
   knitr::kable(digits = 2)
 ```
 
+## mutate with groups
+
+
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    center_tamx = tmax - mean_tmax
+  ) |> 
+  ggplot(aes(x = date, y = center_tamx, color = name)) + 
+  geom_point()
+```
+
+
+Look for cold days
+
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  mutate(
+    temp_rank = min_rank(tmax) 
+  ) |> 
+  filter(temp_rank < 2)
+```
+
+```{r}
+weather_df |> 
+  group_by(name, month) |> 
+  mutate(
+    temp_rank = min_rank(desc(tmin)) 
+  ) |> 
+  filter(temp_rank < 2)
+```
+
+
+What about lags?
+
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(lagged_max = lag(tmax))
+```
+
+Use the variables create
+
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax)
+  ) |> 
+  summarize(
+    sd_tmax_change = sd(temp_change, na.rm = TRUE),
+    tmax_change_max = max(temp_change, na.rm = TRUE)
+  )
+```
+
+```{r}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_change = tmax - lag(tmax),
+    change_rank = min_rank(desc(temp_change))
+  ) |> 
+  filter(
+    change_rank < 2
+  )
+```
+
+
+```{r}
+pulse_df = 
+  haven::read_sas("data/public_pulse_data.sas7bdat") |> 
+  janitor::clean_names() |> 
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit",
+    names_prefix = "bdi_score_",
+    values_to = "bdi"
+  ) |> 
+  mutate(visit = fct_inorder(visit))
+
+pulse_df |> 
+  group_by(visit) |> 
+  summarize(
+    median_bdi = median(bdi, na.rm = TRUE),
+    mean_bdi = mean(bdi, na.rm = TRUE)
+  ) |> 
+  knitr::kable(digits = 2)
+```
+
+
